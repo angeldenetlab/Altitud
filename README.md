@@ -85,4 +85,3 @@ cd ../odoo/scripts && python3 limpiar_operacion.py
 - Timbrado de nómina. La prenómina se entrega al despacho.
 - Emisión de CFDI. La facturación se queda en CONTPAQi; aquí solo se guarda
   monto, folio y UUID para comparar contra el costo.
-# Altitud
