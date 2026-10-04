@@ -1,0 +1,216 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.55);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.35);
+  --radius-2xl: calc(var(--radius) * 1.7);
+  --radius-3xl: calc(var(--radius) * 2.1);
+  --radius-4xl: calc(var(--radius) * 2.5);
+}
+
+:root {
+  /* Base: gris frío con matiz verde petróleo (identidad de servicios) */
+  --background: oklch(0.985 0.004 180);
+  --foreground: oklch(0.2 0.02 200);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 200);
+
+  /* Primario: verde petróleo — color de marca */
+  --primary: oklch(0.47 0.075 195);
+  --primary-foreground: oklch(0.99 0.002 250);
+
+  --secondary: oklch(0.955 0.008 190);
+  --secondary-foreground: oklch(0.28 0.025 198);
+  --muted: oklch(0.955 0.008 190);
+  --muted-foreground: oklch(0.485 0.018 198);
+
+  /* Acento: naranja de seguridad — alertas, CTAs, trabajos de altura */
+  --accent: oklch(0.78 0.13 62);
+  --accent-foreground: oklch(0.28 0.06 55);
+
+  /* Success: reserved for positive KPIs / paid states */
+  --success: oklch(0.6 0.135 155);
+  --success-foreground: oklch(0.99 0.01 155);
+
+  --destructive: oklch(0.577 0.22 26);
+  --border: oklch(0.905 0.008 190);
+  --input: oklch(0.905 0.008 190);
+  --ring: oklch(0.6 0.075 195);
+
+  /* Rampa categórica validada (CVD ΔE 12.8, contraste ≥3:1 sobre la tarjeta).
+     Separada de --accent a propósito: el naranja de marca es demasiado claro
+     para rellenar una barra sobre blanco. */
+  --chart-1: oklch(0.619 0.100 189.7);
+  --chart-2: oklch(0.641 0.150 58.0);
+  --chart-3: oklch(0.599 0.161 271.1);
+  --chart-4: oklch(0.440 0.131 316.2);
+  --chart-5: oklch(0.440 0.120 138.1);
+  /* Rejilla y ejes: recesivos, nunca compiten con las marcas de datos. */
+  --chart-grid: oklch(0.2 0.02 200 / 9%);
+  --chart-axis: oklch(0.485 0.018 198);
+
+  --radius: 0.75rem;
+
+  /* Sidebar: siempre en el extremo oscuro de la paleta */
+  --sidebar: oklch(0.235 0.028 198);
+  --sidebar-foreground: oklch(0.93 0.01 190);
+  --sidebar-primary: oklch(0.78 0.13 62);
+  --sidebar-primary-foreground: oklch(0.2 0.045 70);
+  --sidebar-accent: oklch(0.3 0.03 198);
+  --sidebar-accent-foreground: oklch(0.96 0.012 255);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.6 0.075 195);
+}
+
+.dark {
+  /* True charcoal base, not navy-muddy — closer to modern SaaS dark UIs */
+  --background: oklch(0.165 0.012 198);
+  --foreground: oklch(0.955 0.006 190);
+  --card: oklch(0.215 0.015 198);
+  --card-foreground: oklch(0.955 0.006 190);
+  --popover: oklch(0.225 0.016 198);
+  --popover-foreground: oklch(0.955 0.006 190);
+
+  --primary: oklch(0.72 0.085 190);
+  --primary-foreground: oklch(0.16 0.02 198);
+
+  --secondary: oklch(0.285 0.016 198);
+  --secondary-foreground: oklch(0.95 0.006 190);
+  --muted: oklch(0.27 0.016 198);
+  --muted-foreground: oklch(0.675 0.015 195);
+
+  --accent: oklch(0.78 0.13 62);
+  --accent-foreground: oklch(0.22 0.055 55);
+
+  --success: oklch(0.68 0.14 155);
+  --success-foreground: oklch(0.14 0.03 155);
+
+  --destructive: oklch(0.685 0.19 23);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.72 0.085 190);
+
+  /* Pasos propios para oscuro: revalidados contra la superficie de tarjeta,
+     no un volteo automático de la rampa clara. */
+  --chart-1: oklch(0.651 0.110 193.2);
+  --chart-2: oklch(0.661 0.140 67.3);
+  --chart-3: oklch(0.610 0.210 274.1);
+  --chart-4: oklch(0.550 0.190 321.8);
+  --chart-5: oklch(0.510 0.110 161.9);
+  --chart-grid: oklch(1 0 0 / 10%);
+  --chart-axis: oklch(0.675 0.015 195);
+
+  --sidebar: oklch(0.14 0.014 198);
+  --sidebar-foreground: oklch(0.93 0.01 190);
+  --sidebar-primary: oklch(0.78 0.13 62);
+  --sidebar-primary-foreground: oklch(0.2 0.045 70);
+  --sidebar-accent: oklch(0.22 0.014 258);
+  --sidebar-accent-foreground: oklch(0.96 0.012 255);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.72 0.085 190);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    @apply font-sans scroll-smooth;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+}
+
+@layer utilities {
+  /* Soft elevated surface used for cards that need to stand out on the new,
+     more neutral background without relying on harsh box-shadows. */
+  .surface-elevated {
+    @apply bg-card ring-1 ring-foreground/[0.06] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_-18px_rgba(15,23,42,0.16)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.3),0_16px_32px_-20px_rgba(0,0,0,0.55)];
+  }
+  /* Ambient application backdrop — mirrors the login: a faint dot grid layered
+     over the neutral canvas so every module shares the same modern surface.
+     Token-driven, so it adapts automatically to light/dark. */
+  .app-canvas {
+    background-color: color-mix(in oklch, var(--muted) 40%, var(--background));
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 1px,
+      transparent 0
+    );
+    background-size: 26px 26px;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .sale-print-root {
+    color: black;
+  }
+
+  .sale-print-root .bg-primary\/5 {
+    background: transparent !important;
+  }
+}

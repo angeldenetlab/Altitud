@@ -1,0 +1,42 @@
+services:
+  front:
+    build:
+      context: .
+      args:
+        # Se incrustan al compilar, no al arrancar.
+        NEXT_PUBLIC_DEMO_MODE: ""
+        # Para poner el logo del cliente: copia el archivo a public/brand/ y
+        # escribe aquí su ruta, por ejemplo /brand/logo-cliente.png
+        NEXT_PUBLIC_BRAND_MARK: ""
+    image: altitude-front:latest
+    container_name: altitude-front
+    restart: unless-stopped
+    ports:
+      # 3001 en el host: el 3000 lo ocupa otra app.
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      HOSTNAME: 0.0.0.0
+
+      # Firma de la cookie de sesión. openssl rand -hex 32
+      AUTH_SECRET: ${AUTH_SECRET:?define AUTH_SECRET antes de levantar}
+      COOKIE_SECURE: "false"
+
+      # --- Conexión con Odoo -------------------------------------------
+      # Desde el contenedor, el Odoo del host no es localhost.
+      # En Docker Desktop: http://host.docker.internal:8072
+      # En la misma red de Docker: http://altitu-odoo:8069
+      ODOO_URL: ${ODOO_URL:-http://host.docker.internal:8072}
+      ODOO_DB: ${ODOO_DB:-altitud}
+      # Cuenta técnica del BFF. Fuera de desarrollo, una llave de API.
+      ODOO_USER: ${ODOO_USER:?define ODOO_USER}
+      ODOO_API_KEY: ${ODOO_API_KEY:?define ODOO_API_KEY}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
