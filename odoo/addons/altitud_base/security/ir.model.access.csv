@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_altitud_crew_user,altitud.crew.user,model_altitud_crew,base.group_user,1,1,1,1
+access_altitud_budget_line_user,altitud.budget.line.user,model_altitud_budget_line,base.group_user,1,1,1,1
+access_altitud_extra_user,altitud.extra.user,model_altitud_extra,base.group_user,1,1,1,1
+access_altitud_supply_user,altitud.supply.user,model_altitud_supply,base.group_user,1,1,1,1

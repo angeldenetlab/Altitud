@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Columnas del kanban de proyectos. El `x_code` es la clave que
+             viaja al front; el nombre es lo que se lee en Odoo. -->
+        <record id="stage_levantamiento" model="project.project.stage">
+            <field name="name">Levantamiento</field>
+            <field name="x_code">levantamiento</field>
+            <field name="sequence">10</field>
+        </record>
+        <record id="stage_cotizado" model="project.project.stage">
+            <field name="name">Cotizado</field>
+            <field name="x_code">cotizado</field>
+            <field name="sequence">20</field>
+        </record>
+        <record id="stage_autorizado" model="project.project.stage">
+            <field name="name">Autorizado</field>
+            <field name="x_code">autorizado</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="stage_ejecucion" model="project.project.stage">
+            <field name="name">En ejecución</field>
+            <field name="x_code">ejecucion</field>
+            <field name="sequence">40</field>
+        </record>
+        <record id="stage_por_cerrar" model="project.project.stage">
+            <field name="name">Por cerrar</field>
+            <field name="x_code">por_cerrar</field>
+            <field name="sequence">50</field>
+        </record>
+        <record id="stage_cerrado" model="project.project.stage">
+            <field name="name">Cerrado</field>
+            <field name="x_code">cerrado</field>
+            <field name="sequence">60</field>
+            <field name="fold" eval="True"/>
+        </record>
+        <record id="stage_perdido" model="project.project.stage">
+            <field name="name">Perdido</field>
+            <field name="x_code">perdido</field>
+            <field name="sequence">70</field>
+            <field name="fold" eval="True"/>
+        </record>
+    </data>
+</odoo>

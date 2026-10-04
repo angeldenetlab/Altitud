@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Horas que dura una jornada completa. Con esto se convierte el
+             jornal del colaborador en `hourly_cost`, que es lo que Odoo usa
+             para costear la parte de horas de la asistencia. -->
+        <record id="param_horas_jornada" model="ir.config_parameter">
+            <field name="key">altitud.horas_por_jornada</field>
+            <field name="value">8</field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,89 @@
+v18.30
+-Tamaño del logotipo en reporte de pago.
+
+v18.29
+-En descuentos solo considerar montos menores a cero
+
+v18.28
+-Redondeo descuentos locales
+
+v18.27
+-No tomar en cuenta productos con cantidad en cero.
+
+v18.26
+-Cambio en redondeo en descuento total.
+
+v18.25
+-Cambio en redondeo al subir el XML.
+
+v18.24
+-Cambio de redondo a subtotal y total base de impuestos.
+
+v18.23
+-Agregar estados de cancelación para Pagos.
+
+v18.22
+-Cargar EDI document en account move.
+
+v18.21
+-Corrección de redondeos.
+
+v18.20
+-Corrección documento relacionado en reporte de factura.
+
+v18.19
+-Corrección al RFC y código postal para clientes extranjeros en el complemento de pago.
+
+v18.18
+-Aumento a 6 decimales a cifras de líneas de productos e impuestos, se elimina variable número decimales del modelo de moneda.
+
+v18.17
+-Redondeo en bases de impuestos
+
+v18.16
+-Cambios en el reporte
+
+v18.15
+-Corrección al utilziar descuentos y notas / seciones
+
+v18.14
+-Permitir agregar conceptos en traslado de exportaciones
+
+v18.13
+-Corregir EquivalenciaDR en PDF
+
+v18.12
+-Calculo de descuentos impuestos incluidos
+
+v18.11
+-Calculo de descuentos
+
+v18.10
+-Configurar campos para no copiar.
+
+v18.09
+-Corrección en número de pago de parcialidad.
+
+v18.08
+-No copiar datos fiscales al duplicar pago, no poner decimales en equivalenciadr.
+
+v18.07
+-Corrección el número de parcialidad
+
+v18.06
+-Correccion campos en timbrado pagos
+
+v18.05
+-Cambiar timbrado por por SSL
+
+v18.04
+-Valores por defecto en reversión de movimientos.
+
+v18.03
+-Agregar mensaje de error al revisar saldo.
+
+v18.02
+-Agregar catálogo de países SAT.
+
+v18.01
+-Versión de producción

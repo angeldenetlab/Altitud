@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Todo trabajo lleva folio, por chico que sea. [R-01] -->
+        <record id="seq_altitud_project" model="ir.sequence">
+            <field name="name">Altitud · Proyectos</field>
+            <field name="code">altitud.project</field>
+            <field name="prefix">PRY-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <record id="seq_altitud_quote" model="ir.sequence">
+            <field name="name">Altitud · Cotizaciones</field>
+            <field name="code">altitud.quote</field>
+            <field name="prefix">COT-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <record id="seq_altitud_client" model="ir.sequence">
+            <field name="name">Altitud · Clientes</field>
+            <field name="code">altitud.client</field>
+            <field name="prefix">CLI-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <record id="seq_altitud_purchase" model="ir.sequence">
+            <field name="name">Altitud · Compras</field>
+            <field name="code">altitud.purchase</field>
+            <field name="prefix">CMP-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+        </record>
+
+        <record id="seq_altitud_field_expense" model="ir.sequence">
+            <field name="name">Altitud · Gastos de campo</field>
+            <field name="code">altitud.field.expense</field>
+            <field name="prefix">GC-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+        </record>
+    </data>
+</odoo>

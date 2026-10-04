@@ -1,0 +1,35 @@
+name: altitu-odoo
+
+services:
+  db:
+    image: postgres:16
+    container_name: altitu-odoo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data/pgdata
+
+  odoo:
+    image: odoo:18
+    container_name: altitu-odoo
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8072:8069"
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: odoo
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./addons:/mnt/extra-addons
+      - ./odoo.conf:/etc/odoo/odoo.conf:ro
+
+volumes:
+  odoo-db-data:
+  odoo-web-data:

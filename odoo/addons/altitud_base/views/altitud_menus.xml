@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vistas mínimas: la interfaz de trabajo es el front de Altitud. Esto
+         existe para que desde Odoo se pueda revisar y corregir a mano. -->
+
+    <record id="view_altitud_crew_list" model="ir.ui.view">
+        <field name="name">altitud.crew.list</field>
+        <field name="model">altitud.crew</field>
+        <field name="arch" type="xml">
+            <list string="Cuadrilla" editable="bottom">
+                <field name="project_id"/>
+                <field name="employee_id"/>
+                <field name="date_from"/>
+                <field name="note"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_altitud_crew" model="ir.actions.act_window">
+        <field name="name">Cuadrillas</field>
+        <field name="res_model">altitud.crew</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_altitud_budget_line_list" model="ir.ui.view">
+        <field name="name">altitud.budget.line.list</field>
+        <field name="model">altitud.budget.line</field>
+        <field name="arch" type="xml">
+            <list string="Presupuesto" editable="bottom">
+                <field name="project_id"/>
+                <field name="category"/>
+                <field name="concept"/>
+                <field name="unit"/>
+                <field name="qty"/>
+                <field name="unit_cost"/>
+                <field name="amount" sum="Total"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_altitud_budget_line" model="ir.actions.act_window">
+        <field name="name">Presupuesto por partida</field>
+        <field name="res_model">altitud.budget.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_altitud_extra_list" model="ir.ui.view">
+        <field name="name">altitud.extra.list</field>
+        <field name="model">altitud.extra</field>
+        <field name="arch" type="xml">
+            <list string="Extras y faltantes" editable="bottom">
+                <field name="project_id"/>
+                <field name="date"/>
+                <field name="kind"/>
+                <field name="category"/>
+                <field name="concept"/>
+                <field name="amount" sum="Total"/>
+                <field name="billable" widget="boolean_toggle"/>
+                <field name="quote_folio"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_altitud_extra" model="ir.actions.act_window">
+        <field name="name">Extras y faltantes</field>
+        <field name="res_model">altitud.extra</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_altitud_supply_list" model="ir.ui.view">
+        <field name="name">altitud.supply.list</field>
+        <field name="model">altitud.supply</field>
+        <field name="arch" type="xml">
+            <list string="Insumos" editable="bottom">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="unit"/>
+                <field name="on_hand"/>
+                <field name="reorder_point"/>
+                <field name="last_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_altitud_supply" model="ir.actions.act_window">
+        <field name="name">Insumos</field>
+        <field name="res_model">altitud.supply</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_altitud_root" name="Altitud" sequence="5"/>
+    <menuitem id="menu_altitud_crew" name="Cuadrillas" parent="menu_altitud_root"
+              action="action_altitud_crew" sequence="10"/>
+    <menuitem id="menu_altitud_budget" name="Presupuestos" parent="menu_altitud_root"
+              action="action_altitud_budget_line" sequence="20"/>
+    <menuitem id="menu_altitud_extra" name="Extras y faltantes" parent="menu_altitud_root"
+              action="action_altitud_extra" sequence="30"/>
+    <menuitem id="menu_altitud_supply" name="Insumos" parent="menu_altitud_root"
+              action="action_altitud_supply" sequence="40"/>
+</odoo>
