@@ -49,6 +49,13 @@ export const projectsService = {
   async addFieldExpense(payload: Record<string, unknown>): Promise<ProjectRow> {
     return apiPost<ProjectRow>(ENDPOINT, { action: "addFieldExpense", payload });
   },
+  /**
+   * Padrón activo para elegir responsable de fase. No filtra por cuadrilla
+   * ni por asistencia.
+   */
+  async employees(): Promise<{ rows: { id: number; name: string; job: string }[] }> {
+    return apiPost(ENDPOINT, { action: "employees" });
+  },
   /** Avance por fase. [R-05] */
   async setPhase(payload: Record<string, unknown>): Promise<ProjectRow> {
     return apiPost<ProjectRow>(ENDPOINT, { action: "setPhase", payload });

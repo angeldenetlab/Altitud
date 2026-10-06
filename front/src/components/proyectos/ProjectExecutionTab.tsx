@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Check, ImageIcon, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { SelectField } from "@/components/data/SelectField";
@@ -49,6 +49,11 @@ export function ProjectExecutionTab({
   canWrite: boolean;
 }) {
   const queryClient = useQueryClient();
+  const employees = useQuery({
+    queryKey: ["projects", "employees"],
+    queryFn: () => projectsService.employees(),
+    enabled: canWrite,
+  });
   const [extraOpen, setExtraOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [extra, setExtra] = useState({
@@ -111,6 +116,26 @@ export function ProjectExecutionTab({
     },
   });
 
+  const assigneeItems = useMemo(() => {
+    const rows = employees.data?.rows ?? [];
+    const items = [
+      { value: "0", label: "Sin responsable" },
+      ...rows.map((employee) => ({
+        value: String(employee.id),
+        label: employee.job ? `${employee.name} · ${employee.job}` : employee.name,
+      })),
+    ];
+    const known = new Set(items.map((item) => item.value));
+    for (const phase of project.phases) {
+      if (!phase.assignee_id) continue;
+      const value = String(phase.assignee_id);
+      if (known.has(value)) continue;
+      known.add(value);
+      items.push({ value, label: phase.assignee ?? "Colaborador" });
+    }
+    return items;
+  }, [employees.data?.rows, project.phases]);
+
   const extrasTotal = project.extras
     .filter((row) => row.kind === "extra")
     .reduce((acc, row) => acc + row.amount, 0);
@@ -128,18 +153,52 @@ export function ProjectExecutionTab({
       <Card>
         <CardHeader>
           <CardTitle>Avance por fase</CardTitle>
+          {canWrite && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              El responsable se elige del padrón de empleados. No hace falta que esté en la
+              cuadrilla ni que tenga asistencia en esta obra.
+            </p>
+          )}
         </CardHeader>
         <CardContent className="grid gap-4">
+          {canWrite && employees.isError && (
+            <p className="text-xs text-destructive">No se pudo cargar el personal.</p>
+          )}
+          {canWrite && employees.isSuccess && employees.data.rows.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No hay empleados activos para asignar.
+            </p>
+          )}
           {project.phases.map((phase) => (
             <div key={phase.id} className="grid gap-2 rounded-xl border border-border p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold">{phase.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Peso {phase.weight}% · {phase.assignee ?? "Sin responsable"}
-                    {phase.due_date ? ` · vence ${formatDate(phase.due_date)}` : ""}
-                    {phase.done_date ? ` · terminada ${formatDate(phase.done_date)}` : ""}
-                  </p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="grid min-w-0 flex-1 gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">{phase.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Peso {phase.weight}%
+                      {!canWrite ? ` · ${phase.assignee ?? "Sin responsable"}` : ""}
+                      {phase.due_date ? ` · vence ${formatDate(phase.due_date)}` : ""}
+                      {phase.done_date ? ` · terminada ${formatDate(phase.done_date)}` : ""}
+                    </p>
+                  </div>
+                  {canWrite && (
+                    <div className="grid max-w-sm gap-1.5">
+                      <Label className="text-xs">Responsable</Label>
+                      <SelectField
+                        value={String(phase.assignee_id ?? 0)}
+                        onChange={(value) =>
+                          setPhase.mutate({
+                            phase_id: phase.id,
+                            assignee_id: Number(value),
+                          })
+                        }
+                        items={assigneeItems}
+                        placeholder="Elige un colaborador"
+                        disabled={setPhase.isPending || employees.isLoading}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-12 text-right text-sm font-semibold tabular-nums">

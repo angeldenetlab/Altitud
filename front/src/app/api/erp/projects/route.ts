@@ -32,9 +32,12 @@ interface ActionBody {
 /**
  * BFF de proyectos.
  *
- * Acciones: list | get | stages | create | update | setStage | saveBudget |
- * addActual | addFieldExpense | setPhase | addExtra | addEvidence | close |
- * reopen | crew | assignCrew | unassignCrew
+ * Acciones: list | get | stages | employees | create | update | setStage |
+ * saveBudget | addActual | addFieldExpense | setPhase | addExtra | addEvidence |
+ * close | reopen | crew | assignCrew | unassignCrew
+ *
+ * `employees` es el padrón activo para elegir responsable de fase. No filtra
+ * por cuadrilla ni por asistencia.
  *
  * El proyecto es `project.project` con su cuenta analítica. Armar la
  * cuadrilla vive aquí, en la ficha del proyecto, y es lo que habilita la

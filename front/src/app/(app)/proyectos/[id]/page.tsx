@@ -272,7 +272,15 @@ export default function ProyectoDetallePage() {
                     {project.phases.map((phase) => (
                       <div key={phase.id}>
                         <div className="flex items-baseline justify-between gap-2 text-sm">
-                          <span className="truncate">{phase.name}</span>
+                          <span className="min-w-0 truncate">
+                            {phase.name}
+                            {phase.assignee ? (
+                              <span className="font-normal text-muted-foreground">
+                                {" "}
+                                · {phase.assignee}
+                              </span>
+                            ) : null}
+                          </span>
                           <span className="tabular-nums text-muted-foreground">{phase.progress}%</span>
                         </div>
                         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">

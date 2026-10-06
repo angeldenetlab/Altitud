@@ -95,6 +95,8 @@ export interface ProjectPhase {
   weight: number;
   /** 0–100 */
   progress: number;
+  /** Colaborador del padrón (`hr.employee`). No depende de la cuadrilla. */
+  assignee_id?: number;
   assignee?: string;
   due_date?: string;
   done_date?: string;

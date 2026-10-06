@@ -268,7 +268,7 @@ async function hydrateProjects(projects: OdooProject[]): Promise<ProjectRow[]> {
         name: string;
         x_weight: number;
         x_progress: number;
-        x_assignee: string | false;
+        x_assignee_id: Many2One;
         date_deadline: string | false;
         x_done_date: string | false;
       }>("project.task", [["project_id", "in", ids], ["x_is_phase", "=", true]], {
@@ -278,7 +278,7 @@ async function hydrateProjects(projects: OdooProject[]): Promise<ProjectRow[]> {
           "name",
           "x_weight",
           "x_progress",
-          "x_assignee",
+          "x_assignee_id",
           "date_deadline",
           "x_done_date",
         ],
@@ -392,7 +392,8 @@ async function hydrateProjects(projects: OdooProject[]): Promise<ProjectRow[]> {
           name: task.name,
           weight: task.x_weight,
           progress: task.x_progress,
-          assignee: task.x_assignee || undefined,
+          assignee_id: m2oId(task.x_assignee_id),
+          assignee: m2oName(task.x_assignee_id),
           due_date: task.date_deadline ? task.date_deadline.slice(0, 10) : undefined,
           done_date: task.x_done_date || undefined,
         }),

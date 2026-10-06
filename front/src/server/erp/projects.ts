@@ -28,6 +28,7 @@ import {
 } from "@/lib/odoo/client";
 import {
   companyIdOf,
+  getCompanies,
   getStages,
   loadProjectById,
   loadProjects,
@@ -495,7 +496,32 @@ export async function handleProjects(action: string, payload: Payload, session: 
       return respondWithProject(id);
     }
 
-    /** Avance por fase. [R-05] [R-28] */
+    /**
+     * Padrón activo para el responsable de una fase.
+     *
+     * No mira la cuadrilla ni las asistencias: cualquier colaborador vigente
+     * se puede elegir.
+     */
+    case "employees": {
+      await getCompanies();
+      const rows = await searchRead<{
+        id: number;
+        name: string;
+        job_title: string | false;
+      }>("hr.employee", [["active", "=", true]], {
+        fields: ["id", "name", "job_title"],
+        order: "name",
+      });
+      return json({
+        rows: rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          job: row.job_title || "",
+        })),
+      });
+    }
+
+    /** Avance por fase y su responsable. [R-05] [R-28] */
     case "setPhase": {
       const id = num(payload.id);
       const before = await loadProjectById(id);
@@ -505,28 +531,56 @@ export async function handleProjects(action: string, payload: Payload, session: 
       const phase = before.phases.find((row) => row.id === phaseId);
       if (!phase) return notFound("La fase no existe.");
 
-      const progress = Math.max(0, Math.min(100, num(payload.progress, phase.progress)));
-      const values: Record<string, unknown> = {
-        x_progress: progress,
-        x_done_date: progress >= 100 ? dayIso(0) : false,
-      };
-      if (str(payload.assignee)) values.x_assignee = str(payload.assignee);
+      const values: Record<string, unknown> = {};
+      let progress = phase.progress;
+      if (payload.progress !== undefined) {
+        progress = Math.max(0, Math.min(100, num(payload.progress, phase.progress)));
+        values.x_progress = progress;
+        values.x_done_date = progress >= 100 ? dayIso(0) : false;
+      }
       if (payload.due_date !== undefined) {
         const due = str(payload.due_date);
         values.date_deadline = due ? `${due} 12:00:00` : false;
       }
-      await write("project.task", [phaseId], values);
+
+      let assigneeNote: string | undefined;
+      if (payload.assignee_id !== undefined) {
+        const assigneeId = num(payload.assignee_id, 0);
+        const previousId = phase.assignee_id ?? 0;
+        if (!assigneeId) {
+          values.x_assignee_id = false;
+          if (previousId) assigneeNote = `${phase.name}: quedó sin responsable.`;
+        } else {
+          const found = await searchRead<{ id: number; name: string }>(
+            "hr.employee",
+            [["id", "=", assigneeId]],
+            { fields: ["id", "name"], limit: 1, context: { active_test: false } },
+          );
+          if (found.length === 0) return badRequest("Ese colaborador no existe.");
+          values.x_assignee_id = assigneeId;
+          if (previousId !== assigneeId) {
+            assigneeNote = `${phase.name}: responsable ${found[0].name}.`;
+          }
+        }
+      }
+
+      if (Object.keys(values).length > 0) {
+        await write("project.task", [phaseId], values);
+      }
 
       const previousProgress = computeProgress(before);
       const after = await loadProjectById(id);
       const currentProgress = after ? computeProgress(after) : previousProgress;
-      if (currentProgress !== previousProgress) {
+      if (payload.progress !== undefined && currentProgress !== previousProgress) {
         await postNote(
           "project.project",
           id,
           `${phase.name}: avance al ${progress}%. El proyecto pasa de ${previousProgress}% a ${currentProgress}%.`,
           session,
         );
+      }
+      if (assigneeNote) {
+        await postNote("project.project", id, assigneeNote, session);
       }
       return json(after);
     }

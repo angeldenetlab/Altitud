@@ -13,5 +13,12 @@ class ProjectTask(models.Model):
     x_weight = fields.Float(string="Peso sobre el avance", default=0.0)
     x_progress = fields.Float(string="Avance capturado (%)", default=0.0)
     x_done_date = fields.Date(string="Terminada el")
-    x_assignee = fields.Char(string="Responsable en obra")
+    # Cualquier colaborador del padrón. No hace falta que esté en la cuadrilla
+    # ni que tenga asistencia en la obra.
+    x_assignee_id = fields.Many2one(
+        "hr.employee",
+        string="Responsable en obra",
+        ondelete="set null",
+        index=True,
+    )
     x_is_phase = fields.Boolean(string="Es fase del proyecto", default=True, index=True)
