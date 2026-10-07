@@ -74,7 +74,9 @@ export function ProjectKanban({
               <div>
                 <p className="font-heading text-sm font-semibold">{STAGE_LABELS[stage]}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {stageRows.length} · {formatCurrency(amount)}
+                  {stage === "levantamiento"
+                    ? `${stageRows.length} en espera de cotización`
+                    : `${stageRows.length} · ${formatCurrency(amount)}`}
                 </p>
               </div>
             </div>
@@ -141,7 +143,11 @@ export function ProjectKanban({
 
               {stageRows.length === 0 && (
                 <p className="rounded-lg border border-dashed border-border px-2 py-6 text-center text-[11px] text-muted-foreground">
-                  {canWrite ? "Arrastra un proyecto aquí" : "Sin proyectos"}
+                  {stage === "levantamiento"
+                    ? "En espera de cotización. Se captura en Levantamientos."
+                    : canWrite
+                      ? "Arrastra un proyecto aquí"
+                      : "Sin proyectos"}
                 </p>
               )}
             </div>

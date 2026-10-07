@@ -33,6 +33,14 @@ class ProjectProject(models.Model):
     x_quote_folio = fields.Char(string="Cotización de origen")
     x_notes = fields.Text(string="Notas")
 
+    # --- Levantamiento de campo: el lead, antes de cotizar.
+    x_survey_done_by = fields.Char(string="Levantamiento por")
+    x_survey_date = fields.Date(string="Fecha del levantamiento")
+    x_survey_notes = fields.Text(string="Condiciones del sitio")
+    x_survey_measurements = fields.Text(
+        string="Medidas", help="JSON: [{label, value, unit}]"
+    )
+
     # --- Cierre: el CFDI se queda en CONTPAQi, aquí solo la referencia. [R-35]
     x_invoiced_amount = fields.Float(string="Monto facturado", tracking=True)
     x_invoice_refs = fields.Char(string="Folios de factura")

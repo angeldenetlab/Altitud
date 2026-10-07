@@ -31,6 +31,7 @@ import { GenerateQuoteDialog } from "@/components/proyectos/GenerateQuoteDialog"
 import { ProjectCloseTab } from "@/components/proyectos/ProjectCloseTab";
 import { ProjectCostTab } from "@/components/proyectos/ProjectCostTab";
 import { ProjectExecutionTab } from "@/components/proyectos/ProjectExecutionTab";
+import { ProjectSurveyTab } from "@/components/proyectos/ProjectSurveyTab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,10 +79,11 @@ export default function ProyectoDetallePage() {
   const projectId = Number(id);
   const { session } = useAuth();
   const canWrite = session ? canPerform(session.role, "proyectos.write") : false;
+  const canSurvey = session ? canPerform(session.role, "levantamientos.write") : false;
   const canClose = session ? canPerform(session.role, "proyectos.close") : false;
   const canQuote = session ? canPerform(session.role, "cotizaciones.write") : false;
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState("resumen");
+  const [tab, setTab] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ["project", projectId],
@@ -153,7 +155,11 @@ export default function ProyectoDetallePage() {
             <h2 className="mt-1 font-heading text-2xl font-bold tracking-tight">{project.name}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {project.client}
-              {project.quote_folio ? ` · desde ${project.quote_folio}` : ""}
+              {project.quote_folio
+                ? ` · desde ${project.quote_folio}`
+                : project.stage === "levantamiento"
+                  ? " · levantamiento de campo"
+                  : ""}
             </p>
           </div>
         </div>
@@ -230,15 +236,23 @@ export default function ProyectoDetallePage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0">
-          <Tabs value={tab} onValueChange={(value) => setTab(String(value ?? "resumen"))}>
+          <Tabs
+            value={tab ?? (project.stage === "levantamiento" ? "levantamiento" : "resumen")}
+            onValueChange={(value) => setTab(String(value ?? "resumen"))}
+          >
             <TabsList className="mb-4 flex-wrap">
               <TabsTrigger value="resumen">Resumen</TabsTrigger>
+              <TabsTrigger value="levantamiento">Levantamiento</TabsTrigger>
               <TabsTrigger value="costos">Presupuesto y gasto</TabsTrigger>
               <TabsTrigger value="ejecucion">Ejecución</TabsTrigger>
               <TabsTrigger value="compras">Compras y gastos</TabsTrigger>
               <TabsTrigger value="asistencias">Asistencias</TabsTrigger>
               <TabsTrigger value="cierre">Cierre</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="levantamiento">
+              <ProjectSurveyTab project={project} canWrite={canSurvey} />
+            </TabsContent>
 
             <TabsContent value="resumen">
               <div className="grid gap-6 sm:grid-cols-2">
@@ -305,8 +319,8 @@ export default function ProyectoDetallePage() {
                     <div>
                       <CardTitle>Cotizaciones al cliente</CardTitle>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        La que originó el proyecto y las que se le han generado después por
-                        extras o trabajo adicional.
+                        Se genera desde el levantamiento. En una obra en marcha, extras o
+                        trabajo adicional se suman a este mismo proyecto.
                       </p>
                     </div>
                     {canQuote && <GenerateQuoteDialog project={project} owner={session?.name} />}
@@ -314,7 +328,8 @@ export default function ProyectoDetallePage() {
                   <CardContent className="p-0">
                     {project.quotes.length === 0 ? (
                       <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-                        Este proyecto todavía no tiene cotización.
+                        Todavía no hay cotización. Analiza el levantamiento y genérala desde
+                        aquí.
                       </p>
                     ) : (
                       <ul className="divide-y divide-border">
@@ -337,9 +352,11 @@ export default function ProyectoDetallePage() {
                                     ? "Extras de obra"
                                     : quote.origin === "adicional"
                                       ? "Trabajo adicional"
-                                      : quote.origin === "inicial"
-                                        ? "Cotización inicial"
-                                        : "Originó el proyecto"}
+                                      : quote.origin === "levantamiento"
+                                        ? "Desde el levantamiento"
+                                        : quote.origin === "inicial"
+                                          ? "Cotización inicial"
+                                          : "Originó el proyecto"}
                                 </span>
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">

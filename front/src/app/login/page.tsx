@@ -23,12 +23,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { homePathForRole } from "@/lib/auth/rbac";
+import { useAuthStore } from "@/store/authStore";
+import type { AppRole } from "@/types/roles";
 
-function sanitizeNextPath(next: string | null): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) {
-    return "/panel";
+function landingPath(next: string | null, role?: AppRole): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    return next;
   }
-  return next;
+  return role ? homePathForRole(role) : "/panel";
 }
 
 const highlights = [
@@ -51,14 +54,14 @@ const DEMO_USERS = [
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, status } = useAuth();
+  const { login, status, session } = useAuth();
   const loginAttemptRef = useRef(false);
 
   useEffect(() => {
     if (status === "authenticated" && !loginAttemptRef.current) {
-      router.replace(sanitizeNextPath(searchParams.get("next")));
+      router.replace(landingPath(searchParams.get("next"), session?.role));
     }
-  }, [status, router, searchParams]);
+  }, [status, session?.role, router, searchParams]);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -77,7 +80,7 @@ function LoginForm() {
       await login(username.trim(), password);
       setSuccess(true);
       await new Promise((resolve) => setTimeout(resolve, 450));
-      router.replace(sanitizeNextPath(searchParams.get("next")));
+      router.replace(landingPath(searchParams.get("next"), useAuthStore.getState().session?.role));
     } catch (err) {
       loginAttemptRef.current = false;
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión.");

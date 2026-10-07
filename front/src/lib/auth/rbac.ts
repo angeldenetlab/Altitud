@@ -4,6 +4,7 @@ import { normalizeAppRole } from "@/lib/auth/roles";
 
 const allModules: AppModuleRoute[] = [
   "/panel",
+  "/levantamientos",
   "/proyectos",
   "/cotizaciones",
   "/ordenes",
@@ -33,6 +34,8 @@ const allPermissions: PermissionCode[] = [
   "reportes.read",
   "catalogos.read",
   "catalogos.write",
+  "levantamientos.read",
+  "levantamientos.write",
 ];
 
 /** Matriz rol → módulos + permisos. [R-33] */
@@ -44,9 +47,11 @@ export const roleMatrix: RoleConfig[] = [
   },
   {
     role: "control",
-    modules: ["/panel", "/proyectos", "/cotizaciones", "/ordenes", "/clientes", "/asistencias", "/compras", "/reportes", "/catalogos"],
+    modules: ["/panel", "/levantamientos", "/proyectos", "/cotizaciones", "/ordenes", "/clientes", "/asistencias", "/compras", "/reportes", "/catalogos"],
     permissions: [
       "panel.read",
+      "levantamientos.read",
+      "levantamientos.write",
       "proyectos.read",
       "proyectos.write",
       "cotizaciones.read",
@@ -63,9 +68,10 @@ export const roleMatrix: RoleConfig[] = [
   },
   {
     role: "admin",
-    modules: ["/panel", "/proyectos", "/cotizaciones", "/ordenes", "/clientes", "/compras", "/prenomina", "/reportes", "/catalogos"],
+    modules: ["/panel", "/levantamientos", "/proyectos", "/cotizaciones", "/ordenes", "/clientes", "/compras", "/prenomina", "/reportes", "/catalogos"],
     permissions: [
       "panel.read",
+      "levantamientos.read",
       "proyectos.read",
       "proyectos.write",
       "cotizaciones.read",
@@ -93,13 +99,17 @@ export const roleMatrix: RoleConfig[] = [
   },
   {
     role: "campo",
-    modules: ["/panel", "/proyectos", "/asistencias"],
+    modules: ["/panel", "/levantamientos", "/proyectos", "/asistencias"],
     permissions: [
       "panel.read",
+      "levantamientos.read",
+      "levantamientos.write",
       "proyectos.read",
       "proyectos.write",
       "asistencias.read",
       "asistencias.write",
+      "clientes.read",
+      "clientes.write",
     ],
   },
 ];
@@ -118,4 +128,9 @@ export function canAccessModule(role: AppRole, pathname: string): boolean {
 
 export function canPerform(role: AppRole, permission: PermissionCode): boolean {
   return getRoleConfig(normalizeAppRole(role)).permissions.includes(permission);
+}
+
+/** A dónde entra cada rol. Campo va a la vista de tableta, no al panel. */
+export function homePathForRole(role: AppRole): string {
+  return normalizeAppRole(role) === "campo" ? "/levantamientos" : "/panel";
 }

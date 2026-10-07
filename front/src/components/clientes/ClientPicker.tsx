@@ -7,6 +7,8 @@ import { CreateClientDialog } from "@/components/clientes/CreateClientDialog";
 import { SelectField } from "@/components/data/SelectField";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+import { canPerform } from "@/lib/auth/rbac";
 import { clientsService } from "@/services/clientsService";
 import type { Client } from "@/types/altitude";
 
@@ -24,6 +26,8 @@ export function ClientPicker({
   onChange: (value: ClientSelection) => void;
   disabled?: boolean;
 }) {
+  const { session } = useAuth();
+  const canCreate = session ? canPerform(session.role, "clientes.write") : false;
   const [createOpen, setCreateOpen] = useState(false);
 
   const clients = useQuery({
@@ -63,17 +67,19 @@ export function ClientPicker({
             disabled={disabled || clients.isLoading || items.length === 0}
           />
         </div>
-        <CreateClientDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onCreated={handleCreated}
-          trigger={
-            <Button type="button" variant="outline" size="icon" disabled={disabled}>
-              <Plus className="size-4" />
-              <span className="sr-only">Nuevo cliente</span>
-            </Button>
-          }
-        />
+        {canCreate && (
+          <CreateClientDialog
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            onCreated={handleCreated}
+            trigger={
+              <Button type="button" variant="outline" size="icon" disabled={disabled}>
+                <Plus className="size-4" />
+                <span className="sr-only">Nuevo cliente</span>
+              </Button>
+            }
+          />
+        )}
       </div>
       {value.clientName ? (
         <p className="text-xs text-muted-foreground">
@@ -81,7 +87,9 @@ export function ClientPicker({
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Elige un cliente del catálogo o regístralo con el botón +.
+          {canCreate
+            ? "Elige un cliente del catálogo o regístralo con el botón +."
+            : "Elige un cliente del catálogo."}
         </p>
       )}
     </div>

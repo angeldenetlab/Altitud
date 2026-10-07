@@ -104,4 +104,5 @@ export const ATTENDANCE_SOURCE_LABELS: Record<AttendanceSource, string> = {
   portal: "Portal de campo",
   supervisor: "Supervisor",
   web: "Captura web",
+  telegram: "Telegram",
 };

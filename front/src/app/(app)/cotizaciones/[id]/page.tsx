@@ -133,9 +133,11 @@ export default function CotizacionDetallePage() {
     mutationFn: () => quotesService.authorize({ id: quoteId, user: session?.name }),
     onSuccess: (result) => {
       toast.success(
-        query.data?.origin
-          ? `Autorizada · se suma al proyecto ${result.project_folio}`
-          : `Autorizada · proyecto ${result.project_folio} creado`,
+        query.data?.origin === "levantamiento"
+          ? `Autorizada · el proyecto ${result.project_folio} queda con presupuesto y precio`
+          : query.data?.origin
+            ? `Autorizada · se suma al proyecto ${result.project_folio}`
+            : `Autorizada · proyecto ${result.project_folio} creado`,
       );
       invalidate();
       queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -234,7 +236,9 @@ export default function CotizacionDetallePage() {
                   ? "Extras de obra del proyecto"
                   : quote.origin === "adicional"
                     ? "Trabajo adicional del proyecto"
-                    : "Cotización inicial del proyecto"}{" "}
+                    : quote.origin === "levantamiento"
+                      ? "Desde el levantamiento"
+                      : "Cotización inicial del proyecto"}{" "}
                 <Link
                   href={`/proyectos/${quote.project_id}`}
                   className="font-mono font-semibold text-primary hover:underline"
@@ -273,7 +277,11 @@ export default function CotizacionDetallePage() {
                 ) : (
                   <CheckCircle2 className="size-4" />
                 )}
-                {quote.origin ? "Autorizar (suma al proyecto)" : "Autorizar y generar proyecto"}
+                {quote.origin === "levantamiento"
+                  ? "Autorizar y llenar proyecto"
+                  : quote.origin
+                    ? "Autorizar (suma al proyecto)"
+                    : "Autorizar y generar proyecto"}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => reject.mutate()}>
                 <Ban className="size-4" />
@@ -539,7 +547,12 @@ export default function CotizacionDetallePage() {
                 ))}
               </ol>
               {quote.project_folio &&
-                (quote.origin ? (
+                (quote.origin === "levantamiento" ? (
+                  <p className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">
+                    Al autorizarse se llena el proyecto {quote.project_folio} con presupuesto y
+                    precio de venta; no se abre otro registro.
+                  </p>
+                ) : quote.origin ? (
                   <p className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary">
                     Al autorizarse se suma a lo cobrable del proyecto {quote.project_folio}; no se
                     abre un proyecto nuevo.

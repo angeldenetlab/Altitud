@@ -121,7 +121,7 @@ export default function CotizacionesPage() {
     <div>
       <PageHeader
         title="Cotizaciones"
-        description="Levantamiento → cálculo → visto bueno del socio → envío. Todo con folio y en el sistema, no en el Excel de cada quien. [R-09] [R-13]"
+        description="Se arma desde el levantamiento de campo en Proyectos: cálculo, visto bueno del socio y envío. [R-09] [R-13]"
         actions={
           canWrite ? (
             <div className="flex flex-wrap items-center gap-2">

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
+  ClipboardList,
   FolderKanban,
   FileText,
   ClipboardCheck,
@@ -26,6 +27,12 @@ export const navItems: NavItem[] = [
     label: "Panel",
     description: "Estado de los proyectos activos",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/levantamientos",
+    label: "Levantamientos",
+    description: "Captura de sitio en tableta, a la espera de cotización",
+    icon: ClipboardList,
   },
   {
     href: "/proyectos",

@@ -26,8 +26,10 @@ import {
 import {
   companyCodeOf,
   companyIdOf,
+  parseMeasurements,
   resolveClient,
   serializeEvidenceMeta,
+  stageIdOf,
 } from "@/server/erp/common";
 import { budgetSeedFromCost, createProjectRecord } from "@/server/erp/projects";
 import { postNote } from "@/server/erp/chatter";
@@ -221,16 +223,6 @@ function parseApprovals(raw: string | false): QuoteApproval[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as QuoteApproval[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function parseMeasurements(raw: string | false): { label: string; value: number; unit: string }[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as { label: string; value: number; unit: string }[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -668,7 +660,7 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
       const status = str(payload.status) as QuoteStatus | undefined;
       if (!status || !(status in QUOTE_STATUS_LABELS)) return badRequest("Estatus inválido.");
       if (status === "autorizada") {
-        return badRequest("Usa la acción de autorizar para generar el proyecto.");
+        return badRequest("Usa la acción de autorizar para llenar el proyecto.");
       }
 
       const user = str(payload.user) ?? session.name;
@@ -711,17 +703,45 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
       if (quote.project_id) {
         await write("sale.order", [id], { x_status: "autorizada" });
         await logStep(id, "autorizada", user, str(payload.comment));
-        if (quote.origin === "inicial") {
-          // La cotización inicial fija el precio de venta del proyecto.
+        if (quote.origin === "inicial" || quote.origin === "levantamiento" || !quote.origin) {
+          const autorizado = await stageIdOf("autorizado");
           await write("project.project", [quote.project_id], {
             x_contract_amount: quote.amount_total,
+            x_quote_folio: quote.folio,
+            ...(autorizado ? { stage_id: autorizado } : {}),
           });
+          const existingBudget = await searchRead<{ id: number }>(
+            "altitud.budget.line",
+            [["project_id", "=", quote.project_id]],
+            { fields: ["id"] },
+          );
+          const seed = budgetSeedFromCost(quote.area, quote.cost_total);
+          if (seed.length > 0 && (existingBudget.length === 0 || quote.origin === "levantamiento")) {
+            await createMany(
+              "altitud.budget.line",
+              seed.map((line, index) => ({
+                project_id: quote.project_id,
+                sequence: (index + 1) * 10,
+                category: line.category,
+                concept: line.concept,
+                unit: line.unit,
+                qty: line.qty,
+                unit_cost: line.unit_cost,
+              })),
+            );
+            if (existingBudget.length > 0) {
+              await unlink(
+                "altitud.budget.line",
+                existingBudget.map((line) => line.id),
+              );
+            }
+          }
         }
         await confirmOrder(id);
         await postNote(
           "project.project",
           quote.project_id,
-          `El cliente autorizó ${quote.folio} por ${quote.amount_total.toFixed(2)}.`,
+          `El cliente autorizó ${quote.folio} por ${quote.amount_total.toFixed(2)}. El proyecto queda con presupuesto base y precio de venta.`,
           session,
         );
         return json({
@@ -775,11 +795,11 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
     }
 
     /**
-     * Generar una cotización DESDE un proyecto en marcha. [R-06] [R-09] [R-14]
+     * Generar una cotización DESDE el proyecto. [R-06] [R-09] [R-14]
      *
-     *  - `extras`:    los extras cobrables que se acumularon en obra.
-     *  - `adicional`: trabajo nuevo del cliente en el mismo sitio.
-     *  - `inicial`:   el proyecto se abrió sin cotización y hay que formalizarla.
+     *  - `levantamiento`: el trabajo nuevo; se arma al analizar el sitio.
+     *  - `extras`:        extras cobrables de una obra en marcha.
+     *  - `adicional`:     trabajo nuevo del cliente en el mismo sitio.
      */
     case "createFromProject": {
       const projectId = num(payload.project_id);
@@ -792,6 +812,10 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
         x_area: ProjectArea | false;
         x_contract_amount: number;
         x_coordinator_id: Many2One;
+        x_survey_done_by: string | false;
+        x_survey_date: string | false;
+        x_survey_notes: string | false;
+        x_survey_measurements: string | false;
       }>("project.project", [["id", "=", projectId]], {
         fields: [
           "id",
@@ -802,13 +826,17 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
           "x_area",
           "x_contract_amount",
           "x_coordinator_id",
+          "x_survey_done_by",
+          "x_survey_date",
+          "x_survey_notes",
+          "x_survey_measurements",
         ],
       });
       if (projects.length === 0) return notFound("El proyecto no existe.");
       const project = projects[0];
       const area = (project.x_area || "limpieza") as ProjectArea;
 
-      const origin = (str(payload.origin) ?? "adicional") as QuoteOrigin;
+      const origin = (str(payload.origin) ?? "levantamiento") as QuoteOrigin;
       const freeProduct = await getFreeServiceProduct();
       let lines: LineInput[] = [];
       let notes = str(payload.notes);
@@ -868,8 +896,14 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
         lines = await buildLines(
           Array.isArray(payload.lines) ? (payload.lines as Payload[]) : [],
         );
-        if (lines.length === 0) return badRequest("Agrega al menos una partida a cotizar.");
-        notes = notes ?? `Trabajo adicional solicitado en ${project.x_folio}.`;
+        if (origin !== "levantamiento" && lines.length === 0) {
+          return badRequest("Agrega al menos una partida a cotizar.");
+        }
+        notes =
+          notes ??
+          (origin === "levantamiento"
+            ? `Cotización armada desde el levantamiento ${project.x_folio}.`
+            : `Trabajo adicional solicitado en ${project.x_folio}.`);
       }
 
       const owner =
@@ -879,9 +913,9 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
         str(payload.name) ??
         (origin === "extras"
           ? `Extras de obra · ${project.name}`
-          : origin === "inicial"
-            ? project.name
-            : `Trabajo adicional · ${project.name}`);
+          : origin === "adicional"
+            ? `Trabajo adicional · ${project.name}`
+            : project.name);
 
       const orderId = await create("sale.order", {
         name: await nextQuoteFolio(),
@@ -904,6 +938,50 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
       await recalcTotals(orderId, overhead);
       await logStep(orderId, "calculo", owner);
 
+      if (origin === "levantamiento") {
+        await write("sale.order", [orderId], {
+          x_survey_done_by: project.x_survey_done_by || owner,
+          x_survey_date: project.x_survey_date || dayIso(0),
+          x_survey_notes: project.x_survey_notes || false,
+          x_survey_measurements: project.x_survey_measurements || false,
+        });
+        const surveyPhotos = await searchRead<{
+          id: number;
+          name: string;
+          datas: string | false;
+          mimetype: string | false;
+          description: string | false;
+        }>(
+          "ir.attachment",
+          [
+            ["res_model", "=", "project.project"],
+            ["res_id", "=", projectId],
+          ],
+          { fields: ["id", "name", "datas", "mimetype", "description"] },
+        );
+        for (const photo of surveyPhotos) {
+          let meta: { kind?: string } = {};
+          try {
+            meta = photo.description ? (JSON.parse(photo.description) as { kind?: string }) : {};
+          } catch {
+            meta = {};
+          }
+          if (meta.kind !== "survey" || !photo.datas) continue;
+          await create("ir.attachment", {
+            name: photo.name,
+            res_model: "sale.order",
+            res_id: orderId,
+            datas: photo.datas,
+            mimetype: photo.mimetype || "image/jpeg",
+            description: photo.description || false,
+          });
+        }
+        const cotizado = await stageIdOf("cotizado");
+        if (cotizado) {
+          await write("project.project", [projectId], { stage_id: cotizado });
+        }
+      }
+
       const quote = await readQuote(orderId);
 
       // Marca los extras ya cotizados para no cobrarlos dos veces. [R-06]
@@ -917,9 +995,11 @@ export async function handleQuotes(action: string, payload: Payload, session: Se
         `Se generó la cotización ${quote?.folio ?? ""} para el cliente (${
           origin === "extras"
             ? "extras de obra"
-            : origin === "inicial"
-              ? "cotización inicial"
-              : "trabajo adicional"
+            : origin === "adicional"
+              ? "trabajo adicional"
+              : origin === "levantamiento"
+                ? "desde el levantamiento"
+                : "cotización inicial"
         }) por ${(quote?.amount_total ?? 0).toFixed(2)}.`,
         session,
       );

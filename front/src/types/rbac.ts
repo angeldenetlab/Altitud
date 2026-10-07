@@ -2,6 +2,7 @@ import type { AppRole } from "./roles";
 
 export type AppModuleRoute =
   | "/panel"
+  | "/levantamientos"
   | "/proyectos"
   | "/cotizaciones"
   | "/ordenes"
@@ -25,7 +26,9 @@ export type PermissionCode =
   | "compras.read" | "compras.write"
   | "prenomina.read"
   | "reportes.read"
-  | "catalogos.read" | "catalogos.write";
+  | "catalogos.read" | "catalogos.write"
+  /** Captura de sitio en tableta. Completar el lead, no el presupuesto. */
+  | "levantamientos.read" | "levantamientos.write";
 
 export interface RoleConfig {
   role: AppRole;

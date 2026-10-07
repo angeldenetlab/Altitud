@@ -8,6 +8,7 @@ import {
   ArrowRight,
   BadgeDollarSign,
   CalendarCheck,
+  ClipboardList,
   FileText,
   FolderKanban,
   Percent,
@@ -38,8 +39,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccessModule } from "@/lib/auth/rbac";
 import { formatCurrency } from "@/lib/format";
 import { dashboardService } from "@/services/dashboardService";
+import type { AppModuleRoute } from "@/types/rbac";
 
 function ProgressBar({ value, tone = "primary" }: { value: number; tone?: "primary" | "danger" }) {
   return (
@@ -52,7 +56,8 @@ function ProgressBar({ value, tone = "primary" }: { value: number; tone?: "prima
   );
 }
 
-const SHORTCUTS = [
+const SHORTCUTS: { href: AppModuleRoute; label: string; icon: typeof FolderKanban }[] = [
+  { href: "/levantamientos", label: "Levantar un sitio", icon: ClipboardList },
   { href: "/proyectos", label: "Proyectos y etapas", icon: FolderKanban },
   { href: "/cotizaciones", label: "Cotizaciones por autorizar", icon: FileText },
   { href: "/asistencias", label: "Asistencia del día", icon: CalendarCheck },
@@ -61,9 +66,13 @@ const SHORTCUTS = [
 
 /** Tablero de estado de todos los proyectos activos. [R-29] [R-32] */
 export default function PanelPage() {
+  const { session } = useAuth();
   const query = useQuery({ queryKey: ["dashboard"], queryFn: dashboardService.overview });
   const data = query.data;
   const byArea = data?.by_area ?? [];
+  const shortcuts = SHORTCUTS.filter(
+    (item) => !session?.role || canAccessModule(session.role, item.href),
+  );
 
   return (
     <div>
@@ -263,7 +272,7 @@ export default function PanelPage() {
       </Card>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {SHORTCUTS.map(({ href, label, icon: Icon }) => (
+        {shortcuts.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}

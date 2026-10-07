@@ -3,19 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { BadgeDollarSign, FolderKanban, LayoutGrid, List, Percent, Search, TriangleAlert } from "lucide-react";
+import { BadgeDollarSign, ClipboardList, FolderKanban, LayoutGrid, List, Percent, Search, TriangleAlert } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/data/DataTable";
 import { KpiCard } from "@/components/data/KpiCard";
 import { PageHeader } from "@/components/data/PageHeader";
 import { SelectField } from "@/components/data/SelectField";
 import { AREA_STATUS, PROJECT_STAGE, StatusBadge } from "@/components/data/StatusBadge";
-import { CreateProjectDialog } from "@/components/proyectos/CreateProjectDialog";
 import { ProjectKanban } from "@/components/proyectos/ProjectKanban";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { canPerform } from "@/lib/auth/rbac";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { AREA_LABELS, COMPANY_SHORT, STAGE_LABELS, STAGE_ORDER } from "@/lib/labels";
 import { projectsService } from "@/services/projectsService";
 import type { ProjectArea, ProjectRow } from "@/types/altitude";
@@ -46,6 +46,7 @@ const COMPANY_ITEMS = [
 export default function ProyectosPage() {
   const { session } = useAuth();
   const canWrite = session ? canPerform(session.role, "proyectos.write") : false;
+  const canLevantar = session ? canPerform(session.role, "levantamientos.write") : false;
 
   const [view, setView] = useState<"kanban" | "lista">("kanban");
   const [search, setSearch] = useState("");
@@ -148,8 +149,15 @@ export default function ProyectosPage() {
     <div>
       <PageHeader
         title="Proyectos"
-        description="Un módulo para altura, limpieza y obra: la estructura de costeo es la misma en las tres. [R-08]"
-        actions={canWrite ? <CreateProjectDialog /> : undefined}
+        description="El trabajo nuevo entra por un levantamiento de campo. La cotización se arma después y, al autorizarla, este mismo registro queda como proyecto. [R-08]"
+        actions={
+          canLevantar ? (
+            <Link href="/levantamientos/nuevo" className={cn(buttonVariants())}>
+              <ClipboardList className="size-4" />
+              Nuevo levantamiento
+            </Link>
+          ) : undefined
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

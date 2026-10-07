@@ -5,7 +5,6 @@ import type { PermissionCode } from "@/types/rbac";
 
 /** Acciones que modifican datos: exigen permiso de escritura. [R-33] */
 const WRITE_ACTIONS = new Set([
-  "create",
   "update",
   "setStage",
   "saveBudget",
@@ -22,6 +21,8 @@ const WRITE_ACTIONS = new Set([
 const SPECIAL_ACTIONS: Record<string, PermissionCode> = {
   close: "proyectos.close",
   reopen: "proyectos.close",
+  create: "levantamientos.write",
+  saveSurvey: "levantamientos.write",
 };
 
 interface ActionBody {
@@ -33,7 +34,7 @@ interface ActionBody {
  * BFF de proyectos.
  *
  * Acciones: list | get | stages | employees | create | update | setStage |
- * saveBudget | addActual | addFieldExpense | setPhase | addExtra | addEvidence |
+ * saveBudget | addActual | addFieldExpense | setPhase | addExtra | addEvidence | saveSurvey |
  * close | reopen | crew | assignCrew | unassignCrew
  *
  * `employees` es el padrón activo para elegir responsable de fase. No filtra

@@ -51,7 +51,7 @@ export type QuoteStatus =
   | "no_autorizada";
 
 /** Origen de la captura de asistencia. [R-17] [R-18] */
-export type AttendanceSource = "portal" | "supervisor" | "web";
+export type AttendanceSource = "portal" | "supervisor" | "web" | "telegram";
 
 /** Tipo de jornada registrada. [R-20] */
 export type AttendanceKind = "completa" | "media" | "falta";
@@ -168,6 +168,8 @@ export interface Project {
   evidence: ProjectEvidence[];
   closure?: ProjectClosure;
   notes?: string;
+  /** Levantamiento de campo: el lead, antes de la cotización. */
+  survey?: QuoteSurvey;
 }
 
 /**
@@ -282,12 +284,13 @@ export interface QuoteApproval {
 }
 
 /**
- * Qué cubre una cotización generada desde un proyecto en marcha.
- *  - `extras`: los extras cobrables que se acumularon en obra [R-06]
- *  - `adicional`: trabajo nuevo que pidió el cliente en el mismo sitio
- *  - `inicial`: el proyecto se abrió sin cotización y se formaliza después
+ * De dónde nació la cotización.
+ *  - `levantamiento`: se armó al analizar el levantamiento de campo
+ *  - `extras`: extras cobrables de una obra en marcha [R-06]
+ *  - `adicional`: trabajo nuevo en el mismo sitio
+ *  - `inicial`: atajo viejo (proyecto abierto sin cotización)
  */
-export type QuoteOrigin = "extras" | "adicional" | "inicial";
+export type QuoteOrigin = "levantamiento" | "extras" | "adicional" | "inicial";
 
 export interface Quote {
   id: number;

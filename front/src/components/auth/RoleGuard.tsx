@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { canAccessModule } from "@/lib/auth/rbac";
+import { canAccessModule, homePathForRole } from "@/lib/auth/rbac";
 
 export function RoleGuard({ children }: { children: React.ReactNode }) {
   const { session, status } = useAuth();
@@ -19,7 +19,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status !== "authenticated" || !session?.role) return;
     if (!canAccessModule(session.role, pathname)) {
-      router.replace("/panel");
+      router.replace(homePathForRole(session.role));
     }
   }, [status, session?.role, pathname, router]);
 

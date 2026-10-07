@@ -36,6 +36,14 @@ JORNADAS = [
     ("falta", "Falta"),
 ]
 
+#: De dónde se marcó la jornada. Telegram es captura directa, no una bandeja.
+ORIGENES_ASISTENCIA = [
+    ("web", "Captura web"),
+    ("supervisor", "Supervisor"),
+    ("portal", "Portal de campo"),
+    ("telegram", "Telegram"),
+]
+
 #: Factor del jornal por tipo de jornada. [R-20]
 FACTOR_JORNADA = {"completa": 1.0, "media": 0.5, "falta": 0.0}
 
@@ -59,6 +67,7 @@ ESTATUS_COTIZACION = [
 ]
 
 ORIGEN_COTIZACION = [
+    ("levantamiento", "Desde levantamiento"),
     ("extras", "Extras de obra"),
     ("adicional", "Trabajo adicional"),
     ("inicial", "Cotización inicial"),

@@ -13,6 +13,7 @@ import type {
   ProjectRow,
   ProjectStage,
   QuoteStatus,
+  QuoteSurvey,
 } from "@/types/altitude";
 import { computeTotals, num, round2, str } from "@/lib/compute";
 import {
@@ -164,6 +165,10 @@ const PROJECT_FIELDS = [
   "x_quote_folio",
   "x_contract_amount",
   "x_notes",
+  "x_survey_done_by",
+  "x_survey_date",
+  "x_survey_notes",
+  "x_survey_measurements",
   "x_invoiced_amount",
   "x_invoice_refs",
   "x_closed_at",
@@ -188,6 +193,10 @@ interface OdooProject {
   x_quote_folio: string | false;
   x_contract_amount: number;
   x_notes: string | false;
+  x_survey_done_by: string | false;
+  x_survey_date: string | false;
+  x_survey_notes: string | false;
+  x_survey_measurements: string | false;
   x_invoiced_amount: number;
   x_invoice_refs: string | false;
   x_closed_at: string | false;
@@ -411,18 +420,20 @@ async function hydrateProjects(projects: OdooProject[]): Promise<ProjectRow[]> {
           quote_folio: extra.quote_folio || undefined,
         }),
       ),
-      evidence: (evidenceBy.get(row.id) ?? []).map((item): ProjectEvidence => {
-        const meta = parseEvidenceMeta(item.description);
-        return {
-          id: item.id,
-          title: item.name,
-          phase: meta.phase,
-          date: item.create_date.slice(0, 10),
-          author: meta.author ?? m2oName(item.create_uid) ?? "Usuario",
-          placeholder: meta.placeholder ?? "altura-1",
-          note: meta.note,
-        };
-      }),
+      evidence: (evidenceBy.get(row.id) ?? [])
+        .filter((item) => parseEvidenceMeta(item.description).kind !== "survey")
+        .map((item): ProjectEvidence => {
+          const meta = parseEvidenceMeta(item.description);
+          return {
+            id: item.id,
+            title: item.name,
+            phase: meta.phase,
+            date: item.create_date.slice(0, 10),
+            author: meta.author ?? m2oName(item.create_uid) ?? "Usuario",
+            placeholder: meta.placeholder ?? "altura-1",
+            note: meta.note,
+          };
+        }),
       closure: row.x_closed_at
         ? {
             closed_at: row.x_closed_at,
@@ -436,6 +447,12 @@ async function hydrateProjects(projects: OdooProject[]): Promise<ProjectRow[]> {
           }
         : undefined,
       notes: row.x_notes || undefined,
+      survey: projectSurvey(
+        row,
+        (evidenceBy.get(row.id) ?? []).filter(
+          (item) => parseEvidenceMeta(item.description).kind === "survey",
+        ),
+      ),
     };
 
     const quoteRefs: ProjectQuoteRef[] = (quotesBy.get(row.id) ?? []).map((quote) => ({
@@ -731,6 +748,43 @@ interface EvidenceMeta {
   author?: string;
   placeholder?: string;
   note?: string;
+  kind?: "survey" | "execution";
+}
+
+export function parseMeasurements(
+  raw: string | false | undefined,
+): { label: string; value: number; unit: string }[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as { label: string; value: number; unit: string }[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function projectSurvey(
+  row: OdooProject,
+  photos: { id: number; name: string; description: string | false }[],
+): QuoteSurvey | undefined {
+  const measurements = parseMeasurements(row.x_survey_measurements);
+  if (!row.x_survey_done_by && measurements.length === 0 && photos.length === 0 && !row.x_survey_notes) {
+    return undefined;
+  }
+  return {
+    done_by: row.x_survey_done_by || "Sin responsable",
+    date: row.x_survey_date || row.date_start || "",
+    measurements,
+    photos: photos.map((photo) => {
+      const meta = parseEvidenceMeta(photo.description);
+      return {
+        id: photo.id,
+        title: photo.name,
+        placeholder: meta.placeholder ?? "altura-1",
+      };
+    }),
+    notes: row.x_survey_notes || undefined,
+  };
 }
 
 export function serializeEvidenceMeta(meta: EvidenceMeta): string {

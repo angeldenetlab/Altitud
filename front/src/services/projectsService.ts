@@ -68,6 +68,10 @@ export const projectsService = {
   async addEvidence(payload: Record<string, unknown>): Promise<ProjectRow> {
     return apiPost<ProjectRow>(ENDPOINT, { action: "addEvidence", payload });
   },
+  /** Medidas, condiciones y fotos del sitio. */
+  async saveSurvey(payload: Record<string, unknown>): Promise<ProjectRow> {
+    return apiPost<ProjectRow>(ENDPOINT, { action: "saveSurvey", payload });
+  },
   /** Cierre con comparativo y rentabilidad. [R-07] */
   async close(payload: Record<string, unknown>): Promise<ProjectRow> {
     return apiPost<ProjectRow>(ENDPOINT, { action: "close", payload });

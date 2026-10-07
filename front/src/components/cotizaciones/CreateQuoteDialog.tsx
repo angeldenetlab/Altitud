@@ -90,7 +90,8 @@ export function CreateQuoteDialog({ owner }: { owner?: string }) {
           <DialogHeader>
             <DialogTitle>Nueva cotización</DialogTitle>
             <DialogDescription>
-              Se abre en levantamiento; el costeo se arma con los paramétricos del catálogo.
+              Un trabajo nuevo entra por un levantamiento en Proyectos. Usa esta alta solo si
+              ya analizaste el sitio y vas a costear.
             </DialogDescription>
           </DialogHeader>
 

@@ -7,6 +7,7 @@ from .constants import (
     FACTOR_JORNADA,
     HORAS_JORNADA_DEFECTO,
     JORNADAS,
+    ORIGENES_ASISTENCIA,
     PARAM_HORAS_JORNADA,
 )
 
@@ -30,11 +31,7 @@ class HrAttendance(models.Model):
     )
     x_jornada = fields.Selection(JORNADAS, string="Jornada", index=True)
     x_source = fields.Selection(
-        [
-            ("web", "Captura web"),
-            ("supervisor", "Supervisor"),
-            ("portal", "Portal de campo"),
-        ],
+        ORIGENES_ASISTENCIA,
         string="Origen",
         default="web",
     )
@@ -224,5 +221,64 @@ class HrAttendance(models.Model):
             lines.sudo().unlink()
         return result
 
-    # El kiosco nativo cuenta "quién está adentro" por check_out vacío; una
-    # falta tiene check_out, así que no aparece como presente.
+    # ------------------------------------------------------------------
+    # Telegram: el bot crea la misma jornada que el portal
+    # ------------------------------------------------------------------
+    @api.model
+    def altitud_marcar(
+        self,
+        employee_id=None,
+        chat_id=None,
+        project_id=None,
+        jornada="completa",
+        day=None,
+        note=None,
+    ):
+        """Marca la jornada. Cuadrilla, una por día y costo los aplica create().
+
+        El bot llama esto por JSON-RPC. Si hay una sola obra activa, no hace
+        falta mandar `project_id`. Si hay varias, hay que indicar cuál.
+        """
+        employee = self.env["hr.employee"]._altitud_resolver(
+            employee_id=employee_id, chat_id=chat_id
+        )
+        jornada = jornada or "completa"
+        if jornada not in dict(JORNADAS):
+            raise ValidationError("La jornada tiene que ser completa, media o falta.")
+
+        if not project_id:
+            obras = employee.altitud_obras_activas()
+            if not obras:
+                raise ValidationError(
+                    f"{employee.name} no está en la cuadrilla de ninguna obra activa."
+                )
+            if len(obras) > 1:
+                nombres = ", ".join(
+                    f"{obra['folio'] or obra['name']}" for obra in obras
+                )
+                raise ValidationError(
+                    f"{employee.name} está en más de una obra ({nombres}). Indica cuál."
+                )
+            project_id = obras[0]["id"]
+
+        attendance = self.create(
+            {
+                "employee_id": employee.id,
+                "x_project_id": int(project_id),
+                "x_jornada": jornada,
+                "x_source": "telegram",
+                "x_registered_by": employee.name,
+                "x_note": note or False,
+                "x_day": day or False,
+                "in_mode": "manual",
+                "out_mode": "manual",
+            }
+        )
+        return {
+            "id": attendance.id,
+            "employee_id": employee.id,
+            "employee_name": employee.name,
+            "project_id": attendance.x_project_id.id,
+            "project_folio": attendance.x_project_id.x_folio or "",
+            "jornada": attendance.x_jornada,
+        }

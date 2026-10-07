@@ -1,6 +1,6 @@
 {
     "name": "Altitud · Base",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.2.0",
     "summary": "Control de proyectos de Altitud sobre el módulo de Proyectos de Odoo",
     "description": """
 Cubre los huecos entre el front de Altitud y Odoo 18:
@@ -12,6 +12,8 @@ Cubre los huecos entre el front de Altitud y Odoo 18:
   obra del proyecto. Una captura, un costo, sin líneas huérfanas.
 * Flujo propio de la cotización (visto bueno del socio) sobre sale.order.
 * Compras cargadas al proyecto con referencia del CFDI del proveedor.
+* Identidad de Telegram en el colaborador; la jornada y el ticket de campo
+  se capturan por el mismo modelo que el portal.
 """,
     "author": "Altitud",
     "license": "LGPL-3",
@@ -32,6 +34,7 @@ Cubre los huecos entre el front de Altitud y Odoo 18:
         "data/project_stage.xml",
         "data/ir_config_parameter.xml",
         "views/altitud_menus.xml",
+        "views/hr_employee.xml",
     ],
     "installable": True,
     "application": False,

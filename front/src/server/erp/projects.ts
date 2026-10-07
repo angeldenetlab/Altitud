@@ -19,6 +19,7 @@ import { badRequest, json, notFound, type Payload, unknownAction } from "@/lib/h
 import type { SessionPayload } from "@/lib/auth/server-session";
 import {
   type Many2One,
+  callKw,
   create,
   createMany,
   m2oId,
@@ -128,6 +129,10 @@ export interface CreateProjectInput {
   quoteFolio?: string;
   stage?: ProjectStage;
   notes?: string;
+  surveyDoneBy?: string;
+  surveyDate?: string;
+  surveyNotes?: string;
+  surveyMeasurements?: string;
   budget?: { category: CostCategory; concept: string; unit: string; qty: number; unit_cost: number }[];
 }
 
@@ -152,10 +157,18 @@ export async function createProjectRecord(input: CreateProjectInput): Promise<nu
     x_quote_folio: input.quoteFolio ?? false,
     x_contract_amount: input.contractAmount,
     x_notes: input.notes ?? false,
+    x_survey_done_by: input.surveyDoneBy ?? false,
+    x_survey_date: input.surveyDate ?? false,
+    x_survey_notes: input.surveyNotes ?? false,
+    x_survey_measurements: input.surveyMeasurements ?? false,
     allow_timesheets: true,
   });
 
-  const budget = input.budget ?? budgetSeedFromCost(input.area, input.contractAmount * 0.7);
+  const budget =
+    input.budget ??
+    (input.contractAmount > 0
+      ? budgetSeedFromCost(input.area, input.contractAmount * 0.7)
+      : []);
   if (budget.length > 0) {
     await createMany(
       "altitud.budget.line",
@@ -319,6 +332,23 @@ export async function handleProjects(action: string, payload: Payload, session: 
       const client = await resolveClient(payload);
       if ("error" in client) return badRequest(client.error);
 
+      const measurements = Array.isArray(payload.measurements)
+        ? (payload.measurements as Payload[])
+            .map((row) => ({
+              label: str(row.label) ?? "Medida",
+              value: num(row.value, 0),
+              unit: str(row.unit) ?? "m²",
+            }))
+            .filter((row) => row.value > 0)
+        : [];
+      const doneBy = str(payload.done_by) ?? session.name;
+      if (!str(payload.site)) return badRequest("Captura el sitio.");
+      if (!doneBy) return badRequest("Captura quién fue al sitio.");
+      if (!str(payload.conditions) && !str(payload.notes)) {
+        return badRequest("Describe las condiciones del sitio.");
+      }
+      if (measurements.length === 0) return badRequest("Captura al menos una medida.");
+
       const projectId = await createProjectRecord({
         name,
         clientId: client.id,
@@ -327,17 +357,26 @@ export async function handleProjects(action: string, payload: Payload, session: 
         company: str(payload.company) ?? "altitude",
         supervisorId: num(payload.supervisor_id, 0) || undefined,
         coordinatorId: num(payload.coordinator_id, 0) || session.uid,
-        startDate: str(payload.start_date),
+        startDate: str(payload.start_date) ?? str(payload.survey_date),
         endDate: str(payload.end_date),
-        contractAmount: num(payload.contract_amount, 0),
+        contractAmount: 0,
         notes: str(payload.notes),
+        stage: "levantamiento",
+        surveyDoneBy: doneBy,
+        surveyDate: str(payload.survey_date) ?? dayIso(0),
+        surveyNotes: str(payload.conditions) ?? str(payload.notes),
+        surveyMeasurements: JSON.stringify(measurements),
       });
+
+      if (Array.isArray(payload.photos)) {
+        await attachSurveyPhotos(projectId, payload.photos as Payload[], doneBy);
+      }
 
       const meta = await projectMeta(projectId);
       await postNote(
         "project.project",
         projectId,
-        `Proyecto ${meta?.folio ?? ""} creado con folio y presupuesto base.`,
+        `Levantamiento ${meta?.folio ?? ""} registrado. La cotización se arma después, desde este mismo registro.`,
         session,
       );
       return respondWithProject(projectId);
@@ -370,6 +409,46 @@ export async function handleProjects(action: string, payload: Payload, session: 
       }
 
       if (Object.keys(values).length > 0) await write("project.project", [id], values);
+      return respondWithProject(id);
+    }
+
+    /** Medidas, condiciones y fotos del sitio. Es el lead, antes de cotizar. */
+    case "saveSurvey": {
+      const id = num(payload.id);
+      const meta = await projectMeta(id);
+      if (!meta) return notFound("El proyecto no existe.");
+
+      const measurements = Array.isArray(payload.measurements)
+        ? (payload.measurements as Payload[])
+            .map((row) => ({
+              label: str(row.label) ?? "Medida",
+              value: num(row.value, 0),
+              unit: str(row.unit) ?? "m²",
+            }))
+            .filter((row) => row.value > 0)
+        : [];
+      const doneBy = str(payload.done_by) ?? session.name;
+
+      const values: Record<string, unknown> = {
+        x_survey_done_by: doneBy,
+        x_survey_date: str(payload.survey_date) ?? dayIso(0),
+        x_survey_notes: str(payload.conditions) ?? str(payload.notes) ?? false,
+        x_survey_measurements: JSON.stringify(measurements),
+      };
+      if (str(payload.name)) values.name = str(payload.name);
+      if (payload.site !== undefined) values.x_sitio = str(payload.site) ?? false;
+      if (payload.client_id !== undefined || payload.client !== undefined) {
+        const client = await resolveClient(payload);
+        if ("error" in client) return badRequest(client.error);
+        values.partner_id = client.id;
+      }
+
+      await write("project.project", [id], values);
+
+      if (Array.isArray(payload.photos)) {
+        await attachSurveyPhotos(id, payload.photos as Payload[], doneBy);
+      }
+
       return respondWithProject(id);
     }
 
@@ -478,20 +557,16 @@ export async function handleProjects(action: string, payload: Payload, session: 
       const categoriaCampo = validCategory(payload.category, "gastos_operativos");
       if (!categoriaCampo) return badRequest(`La partida "${str(payload.category)}" no existe.`);
 
-      const reference = await nextSequence("altitud.field.expense");
-      await pushActualLine({
-        projectId: id,
-        accountId: meta.accountId,
-        companyId: meta.companyId,
-        category: categoriaCampo,
+      const photoData = str(payload.photo_data);
+      await callKw("account.analytic.line", "altitud_gasto_campo", [id, amount], {
         concept: str(payload.concept) ?? "Gasto de campo",
+        category: categoriaCampo,
         date: str(payload.date) ?? dayIso(0),
-        amount,
-        source: "gasto_campo",
-        reference,
-        capturedBy: str(payload.captured_by) ?? session.name,
-        registeredBy: str(payload.captured_by) ?? session.name,
-        hasReceipt: payload.has_receipt === true,
+        captured_by: str(payload.captured_by) ?? session.name,
+        has_receipt: payload.has_receipt === true || Boolean(photoData),
+        photo_name: str(payload.photo_name) ?? false,
+        photo_data: photoData ?? false,
+        photo_mimetype: str(payload.photo_mimetype) ?? false,
       });
       return respondWithProject(id);
     }
@@ -848,6 +923,26 @@ export async function handleProjects(action: string, payload: Payload, session: 
 
     default:
       return unknownAction(action);
+  }
+}
+
+async function attachSurveyPhotos(projectId: number, photos: Payload[], author: string) {
+  for (const photo of photos) {
+    const datas = str(photo.datas);
+    if (!datas) continue;
+    await create("ir.attachment", {
+      name: str(photo.title) ?? str(photo.name) ?? "Foto de sitio",
+      res_model: "project.project",
+      res_id: projectId,
+      datas,
+      mimetype: str(photo.mimetype) ?? "image/jpeg",
+      description: serializeEvidenceMeta({
+        kind: "survey",
+        author,
+        placeholder: str(photo.placeholder) ?? "altura-1",
+        note: str(photo.note),
+      }),
+    });
   }
 }
 

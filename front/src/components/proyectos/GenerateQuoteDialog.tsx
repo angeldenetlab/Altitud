@@ -27,11 +27,25 @@ import type { CostCategory, ProjectRow, QuoteOrigin } from "@/types/altitude";
 
 type DraftLine = { key: string; service_id: string; qty: string; price_unit: string };
 
+function isLeadProject(project: ProjectRow) {
+  const hasAuthorized = project.quotes.some((quote) => quote.status === "autorizada");
+  return (
+    project.stage === "levantamiento" || (project.stage === "cotizado" && !hasAuthorized)
+  );
+}
+
+function pendingLeadQuote(project: ProjectRow) {
+  return project.quotes.find(
+    (quote) =>
+      (quote.origin === "levantamiento" || !quote.origin) &&
+      quote.status !== "autorizada" &&
+      quote.status !== "no_autorizada",
+  );
+}
+
 /**
- * Generar una cotización para el cliente **desde el proyecto**. [R-06] [R-09]
- *
- * Es el camino inverso al de Cotizaciones: aquí el trabajo ya está en marcha y
- * hay que cobrarle algo nuevo al cliente sin abrir otro proyecto.
+ * Desde un levantamiento arma la cotización del trabajo nuevo.
+ * En una obra en marcha cotiza extras o trabajo adicional, sin abrir otro proyecto.
  */
 export function GenerateQuoteDialog({
   project,
@@ -42,23 +56,21 @@ export function GenerateQuoteDialog({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const lead = isLeadProject(project);
+  const existing = pendingLeadQuote(project);
   const [open, setOpen] = useState(false);
-  const [origin, setOrigin] = useState<QuoteOrigin>(
-    project.quote_folio ? "extras" : "inicial",
-  );
+  const [origin, setOrigin] = useState<QuoteOrigin>(lead ? "levantamiento" : "extras");
   const [selectedExtras, setSelectedExtras] = useState<number[] | null>(null);
   const [lines, setLines] = useState<DraftLine[]>([
     { key: "l1", service_id: "", qty: "0", price_unit: "0" },
   ]);
-  const [amount, setAmount] = useState(String(project.contract_amount || ""));
-  const [concept, setConcept] = useState(project.name);
   const [notes, setNotes] = useState("");
   const [overhead, setOverhead] = useState("22");
 
   const extras = useQuery({
     queryKey: ["quotes", "pendingExtras", project.id],
     queryFn: () => quotesService.pendingExtras(project.id),
-    enabled: open,
+    enabled: open && !lead,
   });
   const services = useQuery({
     queryKey: ["services"],
@@ -82,6 +94,14 @@ export function GenerateQuoteDialog({
     0,
   );
 
+  const catalogLines = lines
+    .filter((line) => line.service_id && Number(line.qty) > 0)
+    .map((line) => ({
+      service_id: Number(line.service_id),
+      qty: Number(line.qty),
+      price_unit: Number(line.price_unit),
+    }));
+
   const create = useMutation({
     mutationFn: () =>
       quotesService.createFromProject({
@@ -91,18 +111,7 @@ export function GenerateQuoteDialog({
         notes: notes || undefined,
         overhead_pct: Number(overhead || 22),
         ...(origin === "extras" ? { extra_ids: chosenExtras } : {}),
-        ...(origin === "inicial" ? { amount: Number(amount || 0), concept } : {}),
-        ...(origin === "adicional"
-          ? {
-              lines: lines
-                .filter((line) => line.service_id && Number(line.qty) > 0)
-                .map((line) => ({
-                  service_id: Number(line.service_id),
-                  qty: Number(line.qty),
-                  price_unit: Number(line.price_unit),
-                })),
-            }
-          : {}),
+        ...(origin === "adicional" || origin === "levantamiento" ? { lines: catalogLines } : {}),
       }),
     onSuccess: (quote) => {
       toast.success(`Cotización ${quote.folio} generada para ${quote.client}`);
@@ -116,42 +125,61 @@ export function GenerateQuoteDialog({
       toast.error(error instanceof ApiError ? error.message : "No se pudo generar la cotización"),
   });
 
-  const originItems = [
-    ...(pendingExtras.length > 0 || origin === "extras"
-      ? [{ value: "extras", label: "Extras de obra pendientes de cobrar" }]
-      : []),
-    { value: "adicional", label: "Trabajo adicional en el mismo sitio" },
-    ...(!project.quote_folio ? [{ value: "inicial", label: "Cotización inicial del proyecto" }] : []),
-  ];
+  const originItems = lead
+    ? [{ value: "levantamiento", label: "Cotización del levantamiento" }]
+    : [
+        ...(pendingExtras.length > 0 || origin === "extras"
+          ? [{ value: "extras", label: "Extras de obra pendientes de cobrar" }]
+          : []),
+        { value: "adicional", label: "Trabajo adicional en el mismo sitio" },
+      ];
 
-  const total = origin === "extras" ? extrasTotal : origin === "adicional" ? additionalTotal : Number(amount || 0);
+  const total =
+    origin === "extras" ? extrasTotal : origin === "adicional" || origin === "levantamiento"
+      ? additionalTotal
+      : 0;
+  const canSubmit = origin === "levantamiento" || total > 0;
+
+  function handleOpen() {
+    if (existing) {
+      router.push(`/cotizaciones/${existing.id}`);
+      return;
+    }
+    setOrigin(lead ? "levantamiento" : pendingExtras.length > 0 ? "extras" : "adicional");
+    setOpen(true);
+  }
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+      <Button variant="outline" size="sm" onClick={handleOpen}>
         <FilePlus2 className="size-4" />
-        Cotizar al cliente
+        {lead ? (existing ? "Abrir cotización" : "Generar cotización") : "Cotizar al cliente"}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Cotizar al cliente · {project.folio}</DialogTitle>
+            <DialogTitle>
+              {lead ? "Generar cotización" : "Cotizar al cliente"} · {project.folio}
+            </DialogTitle>
             <DialogDescription>
-              Se genera una cotización con folio propio, ligada a este proyecto. Al autorizarse
-              no se abre otro proyecto: se suma a lo cobrable de este. [R-06] [R-09]
+              {lead
+                ? "Se arma la cotización con el levantamiento de campo. Al autorizarla se llena este proyecto con presupuesto y precio de venta."
+                : "Se genera una cotización con folio propio, ligada a esta obra. Al autorizarse no se abre otro proyecto."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
-            <div className="grid gap-1.5">
-              <Label>Qué se le va a cotizar</Label>
-              <SelectField
-                value={origin}
-                onChange={(value) => setOrigin(value as QuoteOrigin)}
-                items={originItems}
-              />
-            </div>
+            {!lead && (
+              <div className="grid gap-1.5">
+                <Label>Qué se le va a cotizar</Label>
+                <SelectField
+                  value={origin}
+                  onChange={(value) => setOrigin(value as QuoteOrigin)}
+                  items={originItems}
+                />
+              </div>
+            )}
 
             {origin === "extras" && (
               <div className="grid gap-2">
@@ -202,9 +230,13 @@ export function GenerateQuoteDialog({
               </div>
             )}
 
-            {origin === "adicional" && (
+            {(origin === "adicional" || origin === "levantamiento") && (
               <div className="grid gap-2">
-                <Label>Partidas del catálogo</Label>
+                <Label>
+                  {origin === "levantamiento"
+                    ? "Partidas del catálogo (se pueden completar en la cotización)"
+                    : "Partidas del catálogo"}
+                </Label>
                 {lines.map((line, index) => (
                   <div key={line.key} className="grid gap-2 sm:grid-cols-[2.4fr_0.7fr_0.9fr_auto]">
                     <SelectField
@@ -280,23 +312,6 @@ export function GenerateQuoteDialog({
               </div>
             )}
 
-            {origin === "inicial" && (
-              <div className="grid gap-4 sm:grid-cols-[1.6fr_1fr]">
-                <div className="grid gap-1.5">
-                  <Label>Concepto</Label>
-                  <Input value={concept} onChange={(event) => setConcept(event.target.value)} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label>Importe al cliente</Label>
-                  <Input
-                    type="number"
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="grid gap-4 sm:grid-cols-[1fr_0.5fr]">
               <div className="grid gap-1.5">
                 <Label>Notas para el cliente</Label>
@@ -312,17 +327,19 @@ export function GenerateQuoteDialog({
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5">
-              <span className="text-sm text-muted-foreground">Total a cotizar</span>
-              <span className="font-heading text-lg font-bold">{formatCurrency(total)}</span>
-            </div>
+            {(origin === "extras" || origin === "adicional") && (
+              <div className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2.5">
+                <span className="text-sm text-muted-foreground">Total a cotizar</span>
+                <span className="font-heading text-lg font-bold">{formatCurrency(total)}</span>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => create.mutate()} disabled={total <= 0 || create.isPending}>
+            <Button onClick={() => create.mutate()} disabled={!canSubmit || create.isPending}>
               {create.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
               Generar cotización
             </Button>
