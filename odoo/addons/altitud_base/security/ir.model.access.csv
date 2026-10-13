@@ -3,3 +3,4 @@ access_altitud_crew_user,altitud.crew.user,model_altitud_crew,base.group_user,1,
 access_altitud_budget_line_user,altitud.budget.line.user,model_altitud_budget_line,base.group_user,1,1,1,1
 access_altitud_extra_user,altitud.extra.user,model_altitud_extra,base.group_user,1,1,1,1
 access_altitud_supply_user,altitud.supply.user,model_altitud_supply,base.group_user,1,1,1,1
+access_altitud_survey_user,altitud.survey.user,model_altitud_survey,base.group_user,1,1,1,1

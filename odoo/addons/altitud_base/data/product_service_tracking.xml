@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Corre en cada actualización. Solo mueve los códigos de catálogo que
+         siguen en «Nada»; no toca ALT-COMPRA, la hoja de horas ni pruebas. -->
+    <function model="product.template" name="altitud_apply_project_only_tracking"/>
+</odoo>

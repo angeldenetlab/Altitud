@@ -12,13 +12,16 @@ function parseAllowedDevOrigins(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-// El navegador nunca habla con el ERP: todo pasa por los Route Handlers de
-// /api/erp/* (patrón BFF). Ver docs/INTEGRACION-ODOO.md.
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins: parseAllowedDevOrigins(process.env.ALLOWED_DEV_ORIGINS),
   turbopack: {
     root: projectRoot,
+  },
+  experimental: {
+    // Las fotos del sitio viajan por una Server Action. Se reducen en el
+    // teléfono antes de subir, pero el tope de 1 MB por omisión se queda corto.
+    serverActions: { bodySizeLimit: "10mb" },
   },
 };
 

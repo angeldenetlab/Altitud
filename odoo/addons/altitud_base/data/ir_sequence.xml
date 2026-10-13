@@ -41,5 +41,13 @@
             <field name="padding">4</field>
             <field name="number_next">1</field>
         </record>
+
+        <record id="seq_altitud_survey" model="ir.sequence">
+            <field name="name">Altitud · Levantamientos</field>
+            <field name="code">altitud.survey</field>
+            <field name="prefix">LEV-</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+        </record>
     </data>
 </odoo>

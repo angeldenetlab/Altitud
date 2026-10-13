@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_altitud_survey_list" model="ir.ui.view">
+        <field name="name">altitud.survey.list</field>
+        <field name="model">altitud.survey</field>
+        <field name="arch" type="xml">
+            <list string="Levantamientos">
+                <field name="folio"/>
+                <field name="name"/>
+                <field name="sitio"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="state"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_altitud_survey_form" model="ir.ui.view">
+        <field name="name">altitud.survey.form</field>
+        <field name="model">altitud.survey</field>
+        <field name="arch" type="xml">
+            <form string="Levantamiento">
+                <header>
+                    <button name="action_generate_quote" type="object"
+                            string="Generar cotización" class="btn-primary"
+                            invisible="sale_order_id"/>
+                    <button name="action_generate_quote" type="object"
+                            string="Ver cotización"
+                            invisible="not sale_order_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="abierto,listo"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Nombre del trabajo"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Alta de oficina">
+                            <field name="folio"/>
+                            <field name="sitio" placeholder="Dirección o referencia del sitio"/>
+                            <field name="employee_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Para la cotización">
+                            <field name="partner_id"/>
+                            <field name="area"/>
+                            <field name="sale_order_id"/>
+                        </group>
+                    </group>
+                    <group string="Captura de sitio">
+                        <group>
+                            <field name="description" placeholder="Qué hay que hacer en el sitio"/>
+                            <field name="floor_count"/>
+                            <field name="survey_date"/>
+                            <field name="surveyed_by_id"/>
+                        </group>
+                        <group>
+                            <field name="site_conditions" placeholder="Accesos, restricciones, estado del sitio"/>
+                            <field name="measurements"
+                                   placeholder='[{"label": "Fachada", "value": "120", "unit": "m²"}]'/>
+                        </group>
+                    </group>
+                    <group string="Fotografías">
+                        <field name="photo_ids" widget="many2many_binary" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_altitud_survey_search" model="ir.ui.view">
+        <field name="name">altitud.survey.search</field>
+        <field name="model">altitud.survey</field>
+        <field name="arch" type="xml">
+            <search string="Levantamientos">
+                <field name="name"/>
+                <field name="folio"/>
+                <field name="sitio"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <filter name="abierto" string="Abiertos" domain="[('state', '=', 'abierto')]"/>
+                <filter name="listo" string="Listos" domain="[('state', '=', 'listo')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_altitud_survey" model="ir.actions.act_window">
+        <field name="name">Levantamientos</field>
+        <field name="res_model">altitud.survey</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_abierto': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Abrir un levantamiento</p>
+            <p>Nombre, ubicación y empleado asignado. El proyecto nace al confirmar la venta.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_altitud_survey" name="Levantamientos" parent="menu_altitud_root"
+              action="action_altitud_survey" sequence="5"/>
+
+    <record id="view_order_form_altitud_survey" model="ir.ui.view">
+        <field name="name">sale.order.form.altitud.survey</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='partner_details']/field[@name='partner_id']" position="after">
+                <field name="x_title"/>
+                <field name="x_survey_id" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -9,6 +9,7 @@ from . import analytic_line
 from . import hr_attendance
 from . import hr_employee
 from . import product_template
+from . import altitud_survey
 from . import sale_order
 from . import purchase_order
 from . import res_partner

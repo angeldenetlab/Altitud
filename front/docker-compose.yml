@@ -2,14 +2,8 @@ services:
   front:
     build:
       context: .
-      args:
-        # Se incrustan al compilar, no al arrancar.
-        NEXT_PUBLIC_DEMO_MODE: ""
-        # Para poner el logo del cliente: copia el archivo a public/brand/ y
-        # escribe aquí su ruta, por ejemplo /brand/logo-cliente.png
-        NEXT_PUBLIC_BRAND_MARK: ""
-    image: altitude-front:latest
-    container_name: altitude-front
+    image: altitud-levantamientos:latest
+    container_name: altitud-levantamientos
     restart: unless-stopped
     ports:
       # 3001 en el host: el 3000 lo ocupa otra app.
@@ -29,7 +23,7 @@ services:
       # En la misma red de Docker: http://altitu-odoo:8069
       ODOO_URL: ${ODOO_URL:-http://host.docker.internal:8072}
       ODOO_DB: ${ODOO_DB:-altitud}
-      # Cuenta técnica del BFF. Fuera de desarrollo, una llave de API.
+      # Cuenta técnica del portal. Fuera de desarrollo, una llave de API.
       ODOO_USER: ${ODOO_USER:?define ODOO_USER}
       ODOO_API_KEY: ${ODOO_API_KEY:?define ODOO_API_KEY}
     extra_hosts:

@@ -34,6 +34,16 @@ class SaleOrder(models.Model):
     x_owner = fields.Char(string="Responsable")
     x_notes = fields.Text(string="Notas")
 
+    #: El documento de sitio. La cotización sale de ahí; no es el proyecto.
+    x_survey_id = fields.Many2one(
+        "altitud.survey",
+        string="Levantamiento",
+        copy=False,
+        index=True,
+        ondelete="set null",
+        tracking=True,
+    )
+
     # --- Levantamiento en sitio: lo puede hacer quien no es socio. [R-11]
     x_survey_done_by = fields.Char(string="Levantamiento por")
     x_survey_date = fields.Date(string="Fecha del levantamiento")
@@ -43,7 +53,10 @@ class SaleOrder(models.Model):
     )
     x_approvals = fields.Text(string="Bitácora de autorización", help="JSON")
 
-    _sql_constraints = [("folio_uniq", "unique(x_folio)", "Ese folio de cotización ya existe.")]
+    _sql_constraints = [
+        ("folio_uniq", "unique(x_folio)", "Ese folio de cotización ya existe."),
+        ("survey_uniq", "unique(x_survey_id)", "Ese levantamiento ya tiene cotización."),
+    ]
 
     def _altitud_assign_folio(self):
         for order in self:

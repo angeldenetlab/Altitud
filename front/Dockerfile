@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------------------------------------------------------------------------
-# Altitude · Control de proyectos
+# Altitud · Portal de levantamientos
 # Next.js 16 en modo standalone. Corre en el puerto 3001 para no chocar con
 # otra app que ya use el 3000.
 #
@@ -17,11 +17,6 @@ RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Las variables NEXT_PUBLIC_* se incrustan al compilar, no al arrancar.
-ARG NEXT_PUBLIC_DEMO_MODE=
-ARG NEXT_PUBLIC_BRAND_MARK=""
-ENV NEXT_PUBLIC_DEMO_MODE=$NEXT_PUBLIC_DEMO_MODE
-ENV NEXT_PUBLIC_BRAND_MARK=$NEXT_PUBLIC_BRAND_MARK
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /app/node_modules ./node_modules

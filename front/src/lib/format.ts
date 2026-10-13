@@ -1,55 +1,37 @@
-const currencyFormatter = new Intl.NumberFormat("es-MX", {
-  style: "currency",
-  currency: "MXN",
-  maximumFractionDigits: 2,
-});
+const TIMEZONE = "America/Mexico_City";
 
-const dateFormatter = new Intl.DateTimeFormat("es-MX", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
-
-const dateTimeFormatter = new Intl.DateTimeFormat("es-MX", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-export function formatCurrency(value: number | null | undefined): string {
-  return currencyFormatter.format(value ?? 0);
+/** El día de hoy en el huso de la operación, como lo espera Odoo (YYYY-MM-DD). */
+export function todayIso(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
-export function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
-  const parsed = new Date(value.includes(" ") ? value.replace(" ", "T") : value);
-  if (Number.isNaN(parsed.getTime())) return "—";
-  return dateFormatter.format(parsed);
+/** `2026-10-10` → `10 oct 2026`. Sin hora: el levantamiento es por día. */
+export function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const [year, month, day] = iso.split("-").map(Number);
+  if (!year || !month || !day) return iso;
+  return new Intl.DateTimeFormat("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-export function formatDateTime(value: string | null | undefined): string {
-  if (!value) return "—";
-  const parsed = new Date(value.includes(" ") ? value.replace(" ", "T") : value);
-  if (Number.isNaN(parsed.getTime())) return "—";
-  return dateTimeFormatter.format(parsed);
+export function formatTime(date: Date): string {
+  return new Intl.DateTimeFormat("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: TIMEZONE,
+  }).format(date);
 }
 
-/**
- * Odoo suele devolver relaciones many2one como `[id, "Nombre"]` o `false`
- * cuando están vacías.
- */
-export function m2oLabel(
-  value: [number, string] | false | null | undefined
-): string {
-  if (!value) return "—";
-  return value[1];
-}
-
-export function m2oId(
-  value: [number, string] | false | null | undefined
-): number | null {
-  if (!value) return null;
-  return value[0];
+/** Enlace a mapas con la ubicación que escribió oficina. */
+export function mapsUrl(site: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(site)}`;
 }
